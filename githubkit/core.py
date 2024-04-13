@@ -29,6 +29,7 @@ from .compat import to_jsonable_python
 from .config import Config, get_config
 from .auth import BaseAuthStrategy, TokenAuthStrategy, UnauthAuthStrategy
 from .typing import (
+    HttpCacheOption,
     URLTypes,
     CookieTypes,
     HeaderTypes,
@@ -90,7 +91,7 @@ class GitHubCore(Generic[A]):
         user_agent: Optional[str] = None,
         follow_redirects: bool = True,
         timeout: Optional[Union[float, httpx.Timeout]] = None,
-        http_cache: bool = True,
+        http_cache: Union[bool, HttpCacheOption] = True,
         auto_retry: Union[bool, RetryDecisionFunc] = True,
     ): ...
 
@@ -106,7 +107,7 @@ class GitHubCore(Generic[A]):
         user_agent: Optional[str] = None,
         follow_redirects: bool = True,
         timeout: Optional[Union[float, httpx.Timeout]] = None,
-        http_cache: bool = True,
+        http_cache: Union[bool, HttpCacheOption] = True,
         auto_retry: Union[bool, RetryDecisionFunc] = True,
     ): ...
 
@@ -122,7 +123,7 @@ class GitHubCore(Generic[A]):
         user_agent: Optional[str] = None,
         follow_redirects: bool = True,
         timeout: Optional[Union[float, httpx.Timeout]] = None,
-        http_cache: bool = True,
+        http_cache: Union[bool, HttpCacheOption] = True,
         auto_retry: Union[bool, RetryDecisionFunc] = True,
     ): ...
 
@@ -137,7 +138,7 @@ class GitHubCore(Generic[A]):
         user_agent: Optional[str] = None,
         follow_redirects: bool = True,
         timeout: Optional[Union[float, httpx.Timeout]] = None,
-        http_cache: bool = True,
+        http_cache: Union[bool, HttpCacheOption] = True,
         auto_retry: Union[bool, RetryDecisionFunc] = True,
     ):
         auth = auth or UnauthAuthStrategy()  # type: ignore
@@ -210,9 +211,9 @@ class GitHubCore(Generic[A]):
 
     # create sync client
     def _create_sync_client(self) -> httpx.Client:
-        if self.config.http_cache:
+        if self.config.http_cache.get_sync_storage:
             transport = hishel.CacheTransport(
-                httpx.HTTPTransport(), storage=hishel.InMemoryStorage()
+                httpx.HTTPTransport(), storage=self.config.http_cache.get_sync_storage()
             )
         else:
             transport = httpx.HTTPTransport()
@@ -233,9 +234,10 @@ class GitHubCore(Generic[A]):
 
     # create async client
     def _create_async_client(self) -> httpx.AsyncClient:
-        if self.config.http_cache:
+        if self.config.http_cache.get_async_storage:
             transport = hishel.AsyncCacheTransport(
-                httpx.AsyncHTTPTransport(), storage=hishel.AsyncInMemoryStorage()
+                httpx.AsyncHTTPTransport(),
+                storage=self.config.http_cache.get_async_storage(),
             )
         else:
             transport = httpx.AsyncHTTPTransport()

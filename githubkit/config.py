@@ -1,3 +1,4 @@
+import hishel
 from typing_extensions import Self
 from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Union, Optional
@@ -5,7 +6,7 @@ from typing import Any, Dict, List, Union, Optional
 import httpx
 
 from .retry import RETRY_DEFAULT
-from .typing import RetryDecisionFunc
+from .typing import HttpCacheOption, RetryDecisionFunc
 
 
 @dataclass(frozen=True)
@@ -15,7 +16,7 @@ class Config:
     user_agent: str
     follow_redirects: bool
     timeout: httpx.Timeout
-    http_cache: bool
+    http_cache: HttpCacheOption
     auto_retry: Optional[RetryDecisionFunc]
 
     def dict(self) -> Dict[str, Any]:
@@ -74,6 +75,20 @@ def build_auto_retry(
         return None
 
 
+def build_http_cache(
+    http_cache: Union[bool, HttpCacheOption] = True,
+) -> HttpCacheOption:
+    if http_cache is True:
+        return HttpCacheOption(
+            get_sync_storage=lambda: hishel.InMemoryStorage(),
+            get_async_storage=lambda: hishel.AsyncInMemoryStorage(),
+        )
+    elif http_cache:
+        return http_cache
+    else:
+        return HttpCacheOption(get_sync_storage=None, get_async_storage=None)
+
+
 def get_config(
     base_url: Optional[Union[str, httpx.URL]] = None,
     accept_format: Optional[str] = None,
@@ -81,7 +96,7 @@ def get_config(
     user_agent: Optional[str] = None,
     follow_redirects: bool = True,
     timeout: Optional[Union[float, httpx.Timeout]] = None,
-    http_cache: bool = True,
+    http_cache: Union[bool, HttpCacheOption] = True,
     auto_retry: Union[bool, RetryDecisionFunc] = True,
 ) -> Config:
     return Config(
@@ -90,6 +105,6 @@ def get_config(
         build_user_agent(user_agent),
         follow_redirects,
         build_timeout(timeout),
-        http_cache,
+        build_http_cache(http_cache),
         build_auto_retry(auto_retry),
     )

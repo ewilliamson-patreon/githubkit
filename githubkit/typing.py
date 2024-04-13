@@ -1,4 +1,5 @@
 from datetime import timedelta
+import hishel
 from typing_extensions import Annotated, TypeAlias
 from typing import (
     IO,
@@ -87,3 +88,8 @@ class RetryOption(NamedTuple):
 
 
 RetryDecisionFunc: TypeAlias = Callable[[GitHubException, int], RetryOption]
+
+
+class HttpCacheOption(NamedTuple):
+    get_async_storage: Optional[Callable[[], hishel.AsyncBaseStorage]] = None
+    get_sync_storage: Optional[Callable[[], hishel.BaseStorage]] = None
